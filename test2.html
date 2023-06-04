@@ -1,0 +1,118 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>CinemAIzer</title>
+    <style>
+        #image-container {
+            margin-bottom: 20px;
+        }
+
+        #uploaded-image {
+            max-width: 300px;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: scroll;
+            background-color: #f0f0f0;
+            background-image: linear-gradient(to bottom right, pink, lightblue,blue);
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-areas:
+                "title"
+                "file-container"
+                "labels";
+            justify-content: center;
+            padding: 50px;
+            background-color: rgb(230,230,230,0.8);
+            margin: 50px;
+            border-radius: 20px
+        }
+    </style>
+</head>
+<body>
+    <h1 class="grid-container title">CinemAIzer</h1>
+    <div id="image-container" class="grid-container file-container">
+        <input type="file" accept="image/*" id="upload-input" />
+        <img id="uploaded-image" alt="Uploaded Image" />
+    </div>
+    <div id="label-container" class="grid-container labels"></div>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+    <script type="text/javascript">// More API functions here:
+    // https://github.com/googlecreativelab/teachablemachine-community/tree/master/libraries/image
+
+    // the link t o your model provided by Teachable Machine export panel
+    
+        const URL = "https://teachablemachine.withgoogle.com/models/0hNLv80P7/";
+        // ...
+
+        let model, labelContainer, maxPredictions;
+
+        // Load the image model
+        async function init() {
+            const modelURL = URL + "model.json";
+            const metadataURL = URL + "metadata.json";
+
+            // Load the model and metadata
+            model = await tmImage.load(modelURL, metadataURL);
+            maxPredictions = model.getTotalClasses();
+            console.log(maxPredictions);
+            // Create an input element for file upload
+            const uploadInput = document.getElementById("upload-input");
+            uploadInput.addEventListener("change", handleFileUpload);
+
+            // Get the label container
+            labelContainer = document.getElementById("label-container");
+
+            // Create child elements for each prediction class
+            for (let i = 0; i < maxPredictions; i++) {
+                const classLabel = document.createElement("div");
+                labelContainer.appendChild(classLabel);
+            }
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+
+            // Read the uploaded file as a data URL
+            reader.onload = function (event) {
+                const img = document.getElementById("uploaded-image");
+                img.src = event.target.result;
+
+                // Wait for the image to load and predict its class
+                img.onload = function () {
+                    predict(img);
+                };
+            };
+
+            reader.readAsDataURL(file);
+        }
+
+        // Run the image through the image model
+        async function predict(image) {
+            // Append the image to the label container
+            const imageContainer = document.getElementById("image-container");
+            imageContainer.appendChild(image);
+
+            // Predict the image class
+            const prediction = await model.predict(image);
+            for (let i = 0; i < maxPredictions; i++) {
+                const classPrediction =
+                    prediction[i].className + ": " + prediction[i].probability.toFixed(2);
+                labelContainer.childNodes[i].innerHTML = classPrediction;
+                /*labelContainer.className = "percentage-bar";
+                labelContainer.addAttribute('data-percent',prediction[i].probability.toFixed(2))*/
+            }
+        }
+
+        // Initialize the application
+        init();
+
+    </script>
+</body>
+</html>
